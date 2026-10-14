@@ -94,15 +94,34 @@ export function formatMetricIdentityLabel(
     ngram: 3,
     variant: 3,
     statistic: 4,
+    min_tokens: 5,
+    max_tokens: 6,
+  }
+  // Short axis labels for numeric/opaque dimensions; word-value dimensions stay bare.
+  // Keep in sync with `_DIMENSION_AXIS_LABELS` in `evalscope/metrics/semantics/formatting.py`.
+  const dimensionAxisLabels: Record<string, string> = {
+    context_length: 'Context',
+    depth_percent: 'Depth',
+    min_tokens: 'Min tokens',
+    max_tokens: 'Max tokens',
+    threshold: 'Threshold',
+    ngram: 'n-gram',
+    k: 'k',
   }
   const dimensions = Object.entries(identity.dimensions)
     .sort(([left], [right]) => (dimensionOrder[left] ?? 3) - (dimensionOrder[right] ?? 3) || left.localeCompare(right))
-    .map(([, value]) => {
-    if (typeof value === 'boolean') return value ? 'Yes' : 'No'
-    return String(value)
-      .replaceAll('_', ' ')
-      .replace(/\b\w/g, (character) => character.toUpperCase())
-    })
+    .map(([key, value]) => {
+    const text =
+      typeof value === 'boolean'
+        ? value
+          ? 'Yes'
+          : 'No'
+        : String(value)
+            .replaceAll('_', ' ')
+            .replace(/\b\w/g, (character) => character.toUpperCase())
+    const axis = dimensionAxisLabels[key]
+    return axis ? `${axis} ${text}` : text
+  })
   return dimensions.length > 0 ? `${base} · ${dimensions.join(' · ')}` : base
 }
 

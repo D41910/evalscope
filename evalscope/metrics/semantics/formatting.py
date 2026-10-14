@@ -83,7 +83,30 @@ _DIRECTION_ARROWS = {
     MetricDirection.LOWER_IS_BETTER: '↓',
 }
 
-_DIMENSION_DISPLAY_ORDER = {'target': 0, 'level': 1, 'scope': 2, 'ngram': 3, 'variant': 3, 'statistic': 4}
+_DIMENSION_DISPLAY_ORDER = {
+    'target': 0,
+    'level': 1,
+    'scope': 2,
+    'ngram': 3,
+    'variant': 3,
+    'statistic': 4,
+    'min_tokens': 5,
+    'max_tokens': 6,
+}
+
+#: Short axis labels for numeric/opaque dimensions whose raw value is not self-describing.
+#: Word-value dimensions (``scope``, ``target``, ``level``, ``variant``, ``statistic`` ...) are
+#: intentionally left unmapped so they keep rendering their value alone (``Overall``, ``Answer``).
+#: Keep in sync with ``dimensionAxisLabels`` in ``evalscope/web/src/domain/metric/metricFormat.ts``.
+_DIMENSION_AXIS_LABELS = {
+    'context_length': 'Context',
+    'depth_percent': 'Depth',
+    'min_tokens': 'Min tokens',
+    'max_tokens': 'Max tokens',
+    'threshold': 'Threshold',
+    'ngram': 'n-gram',
+    'k': 'k',
+}
 
 #: First word character of each word, matching the frontend's ``/\b\w/`` label rule.
 _WORD_START = re.compile(r'\b\w')
@@ -183,9 +206,21 @@ def format_metric_label(
     label = f'{semantics.metric_name} {arrow}'.strip()
     if dimensions:
         ordered = sorted(dimensions.items(), key=lambda item: (_DIMENSION_DISPLAY_ORDER.get(item[0], 3), item[0]))
-        details = ' · '.join(_format_dimension(value) for _, value in ordered)
+        details = ' · '.join(_format_dimension_pair(key, value) for key, value in ordered)
         label = f'{label} · {details}'
     return label
+
+
+def _format_dimension_pair(key: str, value: Union[str, int, float, bool]) -> str:
+    """Render one ``(key, value)`` dimension for a metric label.
+
+    Numeric/opaque dimensions carry a short axis label from :data:`_DIMENSION_AXIS_LABELS` so a
+    value such as ``1000`` is shown as ``Context 1000`` instead of a bare number. Word-value
+    dimensions are not in the map and keep rendering their value alone.
+    """
+    text = _format_dimension(value)
+    axis = _DIMENSION_AXIS_LABELS.get(key)
+    return f'{axis} {text}' if axis else text
 
 
 def format_metric_labels(
